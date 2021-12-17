@@ -14,6 +14,7 @@
 - device.uzsugraph provides a scrollbar and zoom buttons to scroll through 7 days stating from "today" (good to review sun-based events)
 - calendar.list can be configured to additionally show the individual weekday in short or long format 
 - plot.period can be used with data from list items (as an alterbnative to standard database series).  
+- new widget lib.supersize expands single blocks to full screen width and resizes plots (if available). See docu page for design -> blocks
 
 ### Other New Features
 - template checker now checks smarthomeNG item properties (valid properties and types)
@@ -56,6 +57,8 @@
 - status.activelist expanded all contents when unser returned to the page (now all are collapsed)
 - digiclock disappeared or showed wrong times if more than one page with clock was in the DOM
 - offline data were not correctly loaded if "pages" parameter was used in the URL. Now we evaluate "pages" and set the offline filename accordingly.
+- after reload, config page showed settings that should have been hidden
+- Firefox ignored jQM theme selection for collapsible block headings.
 
 ### Known Bugs
 - if item contains a stringified number (e.g. with leading zero). widget.set converts it back to numeric format - so basic.print can not print it as text
