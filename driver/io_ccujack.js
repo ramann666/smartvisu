@@ -1,7 +1,7 @@
 /**
  * -----------------------------------------------------------------------------
  * @package     smartVISU
- * @author      ramann
+ * @author      raman
  * @copyright   2022
  * @license     GPL [http://www.gnu.de]
  * @version     1.0.0
@@ -32,7 +32,7 @@
 var io = {
 
 	//  debug switch
-	debug: false,
+	debug: true,
 	
 	counter: 0,
 
@@ -61,9 +61,9 @@ var io = {
 	 * @param      the item
 	 */
 	read: function (item) {
-		io.debug && console.log("io.read(item = " + item + ")");
+		io.debug && console.log("[io.ccujack]: io.read(item = " + item + ")");
 		var device = item.replace(/\./g, "/");
-		io.debug && console.log("io.read(item = " + device + ")");
+		io.debug && console.log("[io.ccujack]: io.read(item = " + device + ")");
 		
 		var msg = {};
 		msg.item = item;
@@ -78,24 +78,18 @@ var io = {
 	 * @param      the value
 	 */
 	write: function (item, val) {
-		io.debug && console.log("io.write(item = " + item + ", val = " + val + ")");
+		io.debug && console.log("[io.ccujack]: io.write(item = " + item + ", val = " + val + ")");
 		
 		var device = item.replace(/\./g, "/");
-		var state = '';
-		if (item.endsWith('LEVEL') || item.endsWith('SET_TEMPERATURE')) {
-			state = '{"v":' + val + '}';
-		}
-		else {
-			var s = val === '1' ? true : (val === '0' ? false : val);
-			state = '{"v":' + s + '}';
-		}
-			
+		//call converter
+		var state = converter.messageOut(item, val);
+		
 		var msg = {};
-		msg.state = state;
+		msg.state = '{"v":' + state + '}';
 		msg.item = item;
 		msg.val = val;
 		
-		io.debug && console.debug("io.write(item = " + device + ", val = " + state + ")");
+		io.debug && console.debug("[io.ccujack]: io.write(item = " + device + ", val = " + state + ")");
 		io.request('PUT', io.url + '/' + device + '/~pv', msg, io.updateItem);
 	},
 
@@ -106,14 +100,21 @@ var io = {
 	 * @param      options
 	 */
 	trigger: function (name, val) {
-		io.debug && console.log("io.trigger(name = " + name + ", val = " + val + ")");
+		io.debug && console.log("[io.ccujack]: io.trigger(name = " + name + ", val = " + val + ")");
 		
 		var device = name.replace(/\./g, "/");
 		
 		var msg = {};
-		msg.name = name;
-		msg.state = '{"v": true}';
-		io.request('PUT', io.url + '/program/' + device + '/~pv', msg, io.updateItem);
+		msg.item = name;
+		
+		if (name.indexOf("program") !== -1) {
+			msg.state = '{"v": true}';
+			
+		} else if (name.indexOf("sysvar") !== -1) {
+			msg.state = '{"v": ' + val + '}';
+		}
+		
+		io.request('PUT', io.url + '/' + device + '/~pv', msg, io.updateItem);
 	},
 
 	/**
@@ -122,8 +123,8 @@ var io = {
 	 * Driver config parameters are globally available as from v3.2
 	 */
 	init: function () {
-		!io.debug && console.info("Type 'io.debug=true;' to console to see more details.");
-		io.debug && console.log("io.init()");
+		!io.debug && console.info("[io.ccujack]: Type 'io.debug=true;' to console to see more details.");
+		io.debug && console.log("[io.ccujack]: io.init()");
 	
 		io.requestTimeout *= 1000;
 
@@ -134,7 +135,7 @@ var io = {
 			};
 		}
 
-		io.debug && console.debug("io.init(address = " + sv.config.driver.address + ", port = " + (sv.config.driver.ssl ? sv.config.driver.tlsport : sv.config.driver.port) + ", ssl = " + sv.config.driver.ssl + ", username = " + sv.config.driver.username + ", password = " + sv.config.driver.password + ")");
+		io.debug && console.debug("[io.ccujack]: io.init(address = " + sv.config.driver.address + ", port = " + (sv.config.driver.ssl ? sv.config.driver.tlsport : sv.config.driver.port) + ", ssl = " + sv.config.driver.ssl + ", username = " + sv.config.driver.username + ", password = " + sv.config.driver.password + ")");
 
 		if (sv.config.driver.ssl == true) {
 			io.url = 'https://' + sv.config.driver.address + (sv.config.driver.tlsport ? ":" + sv.config.driver.tlsport : '');
@@ -142,7 +143,7 @@ var io = {
 			io.url = 'http://' + sv.config.driver.address + (sv.config.driver.port ? ":" + sv.config.driver.port : '');
 		}
 		
-		io.debug && console.debug("url = " + io.url);
+		io.debug && console.debug("[io.ccujack]: url = " + io.url);
 		io.request('GET', io.url, {}, io.isRequest);
 	},
 
@@ -150,7 +151,7 @@ var io = {
 	 * Lets the driver work
 	 */
 	run: function () {
-		io.debug && console.log("io.run(realtime = " + sv.config.driver.realtime + ")");
+		io.debug && console.log("[io.ccujack]: io.run(realtime = " + sv.config.driver.realtime + ")");
 		io.stop();
 		
 		// refresh all widgets with values from the buffer
@@ -201,8 +202,7 @@ var io = {
 	 * Update the real-time values for active widgets
 	 */
 	monitor: function () {
-		io.debug && console.log("io.monitor(realtime = " + sv.config.driver.realtime + ")");
-		io.debug && console.log("counter: " + io.counter);
+		io.debug && console.log("[io.ccujack]: io.monitor(realtime = " + sv.config.driver.realtime + ")");
 		
 		var items = widget.listeners();
 		var series = widget.series();
@@ -255,7 +255,7 @@ var io = {
 	 * @param      callback
 	 */
 	request: function (method, url, msg, callback) {
-		io.debug && console.log("io.request(method = " + method + ")");
+		io.debug && console.log("[io.ccujack]: io.request(method = " + method + ")");
 		
 		var xhr = new XMLHttpRequest();
 		xhr.withCredentials = false;
@@ -267,12 +267,12 @@ var io = {
 			if (xhr.readyState == 4 && xhr.status == "200") {
 				callback(msg, this.responseText);
 			} else if(xhr.readyState == 4 && xhr.status == "201") {
-				io.debug && console.log('OK, Objekt angelegt');
+				io.debug && console.log("[io.ccujack]: created object");
 			} else {
-				io.debug && console.log("Error:");
+				io.debug && console.log("[io.ccujack]: Error:");
 				io.debug && console.log(this);
 				if (notify.exists) {
-					io.debug && console.log('notify exists');
+					io.debug && console.log("[io.ccujack]: request - notify exists");
 				}
 				
 				var error = this.status;
@@ -303,7 +303,7 @@ var io = {
 		}
 			
 		xhr.ontimeout = function (e) {
-			io.debug && console.log('Timeout');
+			io.debug && console.log("[io.ccujack]: response timeout");
 		}
 		
 		switch (method) {
@@ -327,16 +327,16 @@ var io = {
 	 * @param      response
 	 */
 	isRequest: function (msg, response) {
-		io.debug && console.log("io.isRequest()");
+		io.debug && console.log("[io.ccujack]: io.isRequest()");
 		
 		try {
 			var data = JSON.parse(response);
-			//io.debug && console.log(data);
+			
 			if (data.description !== "Root of the CCU-Jack VEAP server" && data.identifier !== "root") {
 				sv.config.driver.realtime = false;
 			}
 		} catch (e) {
-			io.debug && console.log("io.isRequest() - JSON: "  + sv_lang.status_event_format.error.parsererror);
+			io.debug && console.log("[io.ccujack]: io.isRequest() - JSON: "  + sv_lang.status_event_format.error.parsererror);
 		}
 	},
 	
@@ -347,16 +347,16 @@ var io = {
 	 * @param      response
 	 */
 	updateItem: function (msg, response) {
-		io.debug && console.log("io.updateItem(" + msg.item + ", " + msg.val + ")");
-		io.debug && console.log(response);
-		
+		io.debug && console.log("[io.ccujack]: io.updateItem(" + msg.item + ", " + msg.val + ")");
+
 		if (response) {
 			try {
 				var data = JSON.parse(response);
-				var val = data.v === true ? 1 : (data.v === false ? 0 : data.v.toString());
+				//call converter
+				var val = converter.messageIn(msg.item, data);
 				widget.update(msg.item, val);
 			} catch (e) {
-				io.debug && console.log("io.updateItem() - JSON: "  + sv_lang.status_event_format.error.parsererror);
+				io.debug && console.log("[io.ccujack]: io.updateItem() - JSON: "  + sv_lang.status_event_format.error.parsererror);
 			}
 		} else {
 			if (msg.item) {
@@ -372,7 +372,7 @@ var io = {
 	 * @param      response
 	 */
 	updateItems: function (msg, response) {
-		io.debug && console.log("io.updateItems(" + JSON.stringify(msg.items) + ")");
+		io.debug && console.log("[io.ccujack]: io.updateItems(" + JSON.stringify(msg.items) + ")");
 
 		if (response) {
 			try {
@@ -381,7 +381,8 @@ var io = {
 					for (var i = 0; i < exgdata.readResults.length; i++) {
 						if (exgdata.readResults[i].pv && exgdata.readResults[i].pv.s < 100) {
 							var item = msg.items[i];
-							var val = exgdata.readResults[i].pv.v === true ? 1 : (exgdata.readResults[i].pv.v === false ? 0 : exgdata.readResults[i].pv.v.toString());
+							//call converter
+							var val = converter.messageIn(item, exgdata.readResults[i].pv);
 							
 							if(!io.timer_run) {
 								widget.update(item,val);
@@ -390,7 +391,7 @@ var io = {
 							}
 							
 						} else if(exgdata.readResults[i].error) {
-							io.debug && console.log("io.updateItems() - Error - Code: "  + exgdata.readResults[i].error.code + ", Message: " + exgdata.readResults[i].error.message);
+							io.debug && console.log("[io.ccujack]: io.updateItems() - Error - Code: "  + exgdata.readResults[i].error.code + ", Message: " + exgdata.readResults[i].error.message);
 						}
 					}
 					//start timer after first response
@@ -399,12 +400,11 @@ var io = {
 					}
 				}
 			} catch (e) {
-				io.debug && console.log("io.updateItems() - JSON: "  + sv_lang.status_event_format.error.parsererror);
+				io.debug && console.log("[io.ccujack]: io.updateItems() - JSON: "  + sv_lang.status_event_format.error.parsererror);
 			}
 		}  else {
-			io.debug && console.log("io.updateItems() - No response");
+			io.debug && console.log("[io.ccujack]: io.updateItems() - No response");
 		}
-
 	},
 	
 	/**
@@ -414,7 +414,8 @@ var io = {
 	 * @param      response
 	 */	
 	updateSeries: function (msg, response) {
-		io.debug && console.log("io.updateSeries()");
+		io.debug && console.log("[io.ccujack]: io.updateSeries()");
+		$.noop;
 		//ToDo
 	},
 	
@@ -425,7 +426,7 @@ var io = {
 	 * @param      response
 	 */
 	updateLogs: function (msg, response) {
-		io.debug && console.log("io.updateLogs()");
+		io.debug && console.log("[io.ccujack]: io.updateLogs()");
 
 		if (response) {
 			try {
@@ -441,16 +442,20 @@ var io = {
 							logdata.splice(count, logdata.length - 1);
 							widget.update(item,logdata);
 						} else if(exgdata.readResults[i].error) {
-							io.debug && console.log("io.updateLogs() - Error - Code: "  + exgdata.readResults[i].error.code + ", Message: " + exgdata.readResults[i].error.message);
+							io.debug && console.log("[io.ccujack]: io.updateLogs() - Error - Code: "  + exgdata.readResults[i].error.code + ", Message: " + exgdata.readResults[i].error.message);
 						}					
+					}
+					//start timer after first response
+					if(sv.config.driver.realtime && !io.timer_run) {
+						io.start();
 					}
 				}
 			} catch (e) {
-				io.debug && console.log("io.updateItems() - JSON: "  + sv_lang.status_event_format.error.parsererror);
+				io.debug && console.log("[io.ccujack]: io.updateItems() - JSON: "  + sv_lang.status_event_format.error.parsererror);
 				io.debug && console.log(e);
 			}
 		}  else {
-			io.debug && console.log("io.updateItems() - No response");
+			io.debug && console.log("[io.ccujack]: io.updateItems() - No response");
 		}
 	},
 
@@ -458,7 +463,7 @@ var io = {
 	 * stop all subscribed series
 	 */
 	stopseries: function () {
-		io.debug && console.log("io.stopseries()");
+		io.debug && console.log("[io.ccujack]: io.stopseries()");
 		$.noop;
 		//ToDo
 	},
