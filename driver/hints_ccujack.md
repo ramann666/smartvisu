@@ -22,13 +22,13 @@ Ein Slider kann wie folgt angelegt werden:
            
 - {{ basic.slider('', 'virtdev.JACK000003.1.LEVEL', 0, 100, 1, '', '', '', '', 0) }}
 
-Bei Rolladenaktoren ist darauf zu achten, dass der Wert *100* für den Parameter LEVEL 'offen' und der Wert *0* 'geschlossen' bedeutet. Das Rollo-Widget 'smallshut' von smartVISU kann also nicht direkt verwendet werden, da hier die Werte für 'offen' (0) und 'geschlossen' (100) fest vorgegeben sind. Alle anderen Widgets, bei denen die Werte für 'min', 'max' und 'step' angegeben werden können, sollten aber 
+Bei Rolladenaktoren ist darauf zu achten, dass der Wert *100* für den Parameter LEVEL 'offen' und der Wert *0* 'geschlossen' bedeutet. Das Rollo-Widget 'smallshut' von smartVISU kann also nicht direkt verwendet werden, da hier die Werte für 'offen' (0) und 'geschlossen' (100) fest vorgegeben sind. Alle anderen Widgets, bei denen die Werte für 'min', 'max' und 'step' angegeben werden können, sollten aber verwendet werden können.
 
 Beispiel für einen Basic Slider (Verwendung mit Rolladenaktoren):
 
 - {{ basic.slider('', 'device.000000000000000.4.LEVEL', 100, 0, 1, '', '', '', '', 0) }}
 	
-Beispiel für einen Basic Stateswitch (Verwendung mit Rolladenaktoren):
+Beispiel für einen Basic Stateswitch zum Hochfahren (Verwendung mit Rolladenaktoren):
 	
 - {{ basic.stateswitch('',  'device.000000000000000.4.LEVEL', '', '100', 'carat-u') }}
 
@@ -72,7 +72,7 @@ In smartVISU kann das Log-Widget wie folgt angelegt werden:
 	
 - {{ status.log('', 'sysvar.10000', 10) }}
 	
-Die Nummer der Systemvariable (sysvar) kann man im Navigator auf der Webpage von CCU-Jack nachschauen.
+Die Nummer der Systemvariable (sysvar) kann man im Navigator auf der Webpage von CCU-Jack ermitteln.
 
 
 Das Trigger-Widget kann eingesetzt werden, um z.B. Programme auf der CCU auszulösen oder Werte in vorhandene Systemvariablen zu schreiben.
