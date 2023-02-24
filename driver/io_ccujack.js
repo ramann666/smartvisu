@@ -199,6 +199,15 @@ var io = {
 	},
 	
 	/**
+	 * Closes the connection
+	 */
+	close: function () {
+		io.debug && console.log("[io.ccujack] close connection");
+		io.stop();
+		io.monitor();
+	},
+	
+	/**
 	 * Update the real-time values for active widgets
 	 */
 	monitor: function () {
