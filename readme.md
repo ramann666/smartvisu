@@ -3,7 +3,7 @@
 [![Join the chat at https://gitter.im/sVISU/Lobby](https://badges.gitter.im/sVISU/Lobby.svg)](https://gitter.im/sVISU/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
   
 ## Warning ! The current version in this develop branch is experimental and should not be used in productive environments!
-Use version v3.2.2 from master branch instead.
+Use version v3.3.1 from master branch instead.
 
 
 ## DESCRIPTION

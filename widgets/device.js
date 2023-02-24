@@ -27,7 +27,8 @@ $.widget("sv.device_codepad", $.sv.widget, {
 
     $('[data-bind="' + id + '"]')
     .on('mouseenter', function(event) {
-      clickpreventer.appendTo(this)
+      if (!$(this).closest('[data-bind="' + id + '"]').data('access'))
+		  clickpreventer.appendTo(this)
       .css({
         left: parseInt(event.pageX - clickpreventer.offsetParent().offset().left)-1,
         top:  parseInt(event.pageY - clickpreventer.offsetParent().offset().top)-1,
@@ -35,7 +36,8 @@ $.widget("sv.device_codepad", $.sv.widget, {
       });
     })
     .on('mousemove', '*', function(event) {
-      clickpreventer.appendTo(this)
+      if (!$(this).closest('[data-bind="' + id + '"]').data('access')) 
+		  clickpreventer.appendTo(this)
       .css({
         left: parseInt(event.pageX - clickpreventer.offsetParent().offset().left)-1,
         top:  parseInt(event.pageY - clickpreventer.offsetParent().offset().top)-1,
@@ -385,7 +387,8 @@ $.widget("sv.device_uzsu", $.sv.widget, {
 
     // wenn keine Daten vorhanden, bzw. nicht mindestens die Eigenschaft "active" vorhanden ist, dann ist kein UZSU-item angelegt / initialisiert und es wird nichts gemacht
     if (response.length === 0 || !response[0].hasOwnProperty("active")){
-      notify.message("error", "UZSU widget", "No UZSU data available in item '" + this.options.item + "' for widget '" + this.options.id + "'.");
+	  var supplement = (this.options.item.substr(-5) != ".uzsu") ? "Seems this is not an uzsu item. Try '" + this.options.item+".uzsu'." : "";
+      notify.message("error", "UZSU widget", "No UZSU data available in item '" + this.options.item + "'" + (this.options.id ? " for widget '" + this.options.id + "'. " : ". ") + supplement) ;
       return;
     }
 
@@ -858,8 +861,9 @@ $.widget("sv.device_uzsu", $.sv.widget, {
     var uzsuCalc = uzsuRowExpHoli.find('.uzsuCalculated'+caller).val();
 	if (uzsuRowExpHoli.find('.uzsuSunActive'+caller).is(':checked')){
 	  if (caller == 'seriesend'){
-	    uzsuRowExpHoli.prevUntil(searchLine).find('.uzsuSeriesEndTypeInput').last().find(':radio').prop('checked', false).checkboxradio("refresh")
-		  .end().find('[value="t"]:radio').prop('checked', true).checkboxradio("refresh");
+	    uzsuRowExpHoli.prevUntil(searchLine).find('.uzsuSeriesEndTypeInput').last().find(':radio').prop('checked', false).checkboxradio("refresh").checkboxradio( "disable" )
+		  .end().find('[value="t"]:radio').prop('checked', true).checkboxradio("refresh").checkboxradio( "disable" )
+		  .parents().find('.uzsuCellText.uzsuTimeSerieMaxText').text(sv_lang.uzsu.seriesend);
 	  }
       uzsuTimeCron.attr('type','input').val(uzsuRowExpHoli.find('.uzsuEvent'+caller+' select').val()).textinput('disable');
       var myExpertrow = uzsuRowExpHoli.next();
@@ -870,6 +874,10 @@ $.widget("sv.device_uzsu", $.sv.widget, {
         uzsuTimeCron.attr('type','time').val((uzsuCalc == undefined || uzsuCalc == '') ? '00:00' : uzsuCalc);
 	  if(uzsuTimeCron.val().indexOf('series')!=0)
 		uzsuTimeCron.textinput('enable');
+	  if (caller == 'seriesend'){
+	    uzsuRowExpHoli.prevUntil(searchLine).find('.uzsuSeriesEndTypeInput').last().find(':radio').checkboxradio( "enable" )
+		  .end().find('[value="t"]:radio').checkboxradio( "enable" )
+	  }
     }
   },
 
@@ -1377,7 +1385,8 @@ $.widget("sv.device_uzsu", $.sv.widget, {
     // Fehlerbehandlung für ein nicht vorhandenes DOM Objekt. Das response Objekt ist erst da, wenn es mit update angelegt wurde. Da diese
     // Schritte asynchron erfolgen, kann es sein, dass das Icon bereits da ist, clickbar, aber noch keine Daten angekommen. Dann darf ich nicht auf diese Daten zugreifen wollen !
     if(response.list === undefined){
-      notify.message("error", "UZSU widget", "No UZSU data available in item '" + this.options.item + "' for widget '" + this.id + "'.");
+   	  var supplement = (this.options.item.substr(-5) != ".uzsu") ? "Seems this is not an uzsu item. Try '" + this.options.item+".uzsu'." : "";
+      notify.message("error", "UZSU widget", "No UZSU data available in item '" + this.options.item + "'" + (this.options.id ? " for widget '" + this.options.id + "'. " : ". ") + supplement);
       return false;
     }
 
@@ -1988,7 +1997,7 @@ $.widget("sv.device_uzsugraph", $.sv.device_uzsu, {
       });
 
       // active/inactive button
-      chart.renderer.button(String.fromCharCode(160)+String.fromCharCode(10004)+String.fromCharCode(160), chart.plotLeft, null, function(e) { self._uzsudata.active = !self._uzsudata.active; self._save(); }, null,  null,  null,  null, 'callout')
+      chart.renderer.button(String.fromCharCode(160)+String.fromCharCode(10004)+String.fromCharCode(160), chart.plotLeft, null, function(e) { self._uzsudata.active = !self._uzsudata.active; self._save(); }, {} , {}, {}, {}, 'callout')
         .attr({
           align: 'right',
           title: sv_lang.uzsu.active
@@ -2004,7 +2013,7 @@ $.widget("sv.device_uzsugraph", $.sv.device_uzsu, {
       ];
 
       $.each(self.interpolationButtons, function(i, button) {
-        button.element = chart.renderer.button('', null, null, function(e) { self._uzsudata.interpolation.type = button.interpolationType; self._save(); }, null,  null,  null,  null, button.shape)
+        button.element = chart.renderer.button('', null, null, function(e) { self._uzsudata.interpolation.type = button.interpolationType; self._save(); }, {} , {}, {}, {}, button.shape)
           .attr({
             align: 'right',
             title: sv_lang.uzsu[button.langKey],
@@ -2060,7 +2069,7 @@ $.widget("sv.device_uzsugraph", $.sv.device_uzsu, {
 		  chart.xAxis[0].setExtremes();
 		  chart.xAxis[0].update({min: button.xMin, max: button.xMax}, false); 
 		  chart.redraw();
-		  }, null,  null,  null,  null, button.shape)
+		  }, {}, {}, {}, {}, button.shape)
 		  .attr({
 			align: 'right',
 			title: sv_lang.uzsu[button.day],
@@ -2288,7 +2297,8 @@ $.widget("sv.device_uzsugraph", $.sv.device_uzsu, {
   _save: function() {
     this._uzsuCollapseTimestring(this._uzsudata);
     this._write(this._uzsudata);
-    this._delay(function() { this.draw() }, 1); // has to be delayed to prevent exception in highcharts draggable points
+    if(this._uzsuParseAndCheckResponse(this._uzsudata))
+      this.draw();
   },
 
   _timeToTimestamp: function(time) {
@@ -2427,6 +2437,8 @@ $.widget("sv.device_uzsugraph", $.sv.device_uzsu, {
     // Handler, um den Status anhand des Pulldowns SUN zu setzen
     uzsuPopup.delegate('.uzsuRowExpert [class*="uzsuEvent"] select, input[class*="uzsuSunActive"]', 'change', function (){
 	  var searchClass = $(this)[0].className;
+	  if ($(this)[0].nodeName == "SELECT") 
+            searchClass = $(this).parents()[2].className;
 	  var searchPos = searchClass.lastIndexOf('series');
 	  var caller = (searchPos < 0 ? '' : searchClass.substring(searchPos));
       self._uzsuSetSunActiveState($(this), caller);
@@ -2655,10 +2667,10 @@ $.widget("sv.device_uzsutable", $.sv.device_uzsu, {
                             myTimeDict.push(myInstance._GetTimeEntryDict(myActItem.calculated))
                         } else {
                             if (myActItem.time.search("sunrise") >= 0) {
-                                myTimeDict.push(myInstance._GetTimeEntryDict(myActItem.sunrise))
+                                myTimeDict.push(myInstance._GetTimeEntryDict(myDict.sunrise != undefined ? myDict.sunrise : "06:00"))
                             }
                             if (myActItem.time.search("sunset") >= 0) {
-                                myTimeDict.push(myInstance._GetTimeEntryDict(myActItem.sunset))
+                                myTimeDict.push(myInstance._GetTimeEntryDict(myDict.sunset != undefined ? myDict.sunset : "19:30" ))
                             }
                         }
                     }

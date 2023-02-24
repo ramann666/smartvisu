@@ -51,7 +51,7 @@ function twig_deficon(Twig_Environment $env, $val, $def = '')
 	  $ret = array();
 		foreach($val as $pic)
 		{
-	    $ret[] = $entry == '' ? $def : $pic;
+	    $ret[] = $pic == '' ? $def : $pic;
 		}
 	}
 
@@ -314,8 +314,9 @@ function twig_configmeta($filename)
 	foreach($header as $tag) {
 		if(array_key_exists($tag[1], $ret)) {
 			if(is_array($ret[$tag[1]])) {
-        $data = preg_split('#\s+#', $tag[2], 2);
-				$ret[$tag[1]][$data[0]] = $data[1];
+				$data = preg_split('#\s+#', $tag[2], 2);
+				$ret[$tag[1]][$data[0]] = (isset($data[1]) && $data[1] != '' ? $data[1] : null);
+				//debug_to_console($tag[1].' '.$data[0].' '.$ret[$tag[1]][$data[0]]);
 			}
 			else
         $ret[$tag[1]] = $tag[2];
@@ -450,8 +451,9 @@ function twig_asset_exists($file) {
 		if(is_file(const_path . 'widgets/'. $file)) $fileExists = 1;
 		if(is_file(const_path . 'dropins/'. $file)) $fileExists = 1;
 		if(is_file(const_path . 'dropins/widgets/' . $file )) $fileExists = 1;
+		if(is_file(const_path . 'dropins/shwidgets/' . $file )) $fileExists = 1;
 		if(is_file(const_path . 'pages/' . $requestpages .'/widgets/'. $file )) $fileExists = 1;
-		$searchpath = 'in ./widgets, ./dropins, ./dropins/widgets and ./pages/'. $requestpages .'/widgets/';
+		$searchpath = 'in ./widgets, ./dropins, ./dropins/widgets, ./dropins/shwidgets and ./pages/'. $requestpages .'/widgets/';
 	} else 	{	
 		// add const_path if $file is relative
 		if (substr($file, 0, 1) != '/') 

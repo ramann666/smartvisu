@@ -21,12 +21,8 @@ $.widget("sv.dynicon", $.sv.widget, {
 
 	_events: {
 		'click': function (event) {
-			if (this.options.item) {
-				var items = this.options.item.explode();
-
-				if (items[1]) {
-					io.write(items[1], (widget.get(items[1]) == 0 ? 1 : 0));
-				}
+			if (this.items[1]) {
+				io.write(this.items[1], (widget.get(this.items[1]) == 0 ? 1 : 0));
 			}
 		}
 	}
@@ -313,12 +309,8 @@ $.widget("sv.icon_heating", $.sv.widget, {
 
 	_events: {
 		'click': function (event) {
-			if (this.options.item) {
-				var items = this.options.item.explode();
-
-				if (items[0]) {
-					io.write(items[0], (widget.get(items[0]) == 0 ? 1 : 0));
-				}
+			if (this.items[0]) {
+				io.write(this.items[0], (widget.get(this.items[0]) == 0 ? 1 : 0));
 			}
 		}
 	}
@@ -439,7 +431,7 @@ $.widget("sv.icon_ventilation", $.sv.dynicon, {
 		var min = parseFloat(this.options.min);
 
 		var val = (1 - Math.min(Math.max((response[0] - min) / (max - min), 0), 1)) * 4.5 + 0.5;
-		this.element.find('#anim').attr('dur', (response[0] > 0 ? val : 0)).attr('begin', 0);
+		this.element.find('#anim').attr('dur', (response[0] > 0 ? val : 'indefinite')).attr('begin', 0);
 	}
 });
 
@@ -476,7 +468,7 @@ $.widget("sv.icon_windmill", $.sv.dynicon, {
 		var min = parseFloat(this.options.min);
 
 		var val = (1 - Math.min(Math.max((response[0] - min) / (max - min), 0), 1)) * 4.5 + 0.5;
-		this.element.find('#anim1').attr('dur', (response[0] > 0 ? val : 0)).attr('begin', 0);
+		this.element.find('#anim1').attr('dur', (response[0] > 0 ? val : 'indefinite')).attr('begin', 0);
 	}
 });
 

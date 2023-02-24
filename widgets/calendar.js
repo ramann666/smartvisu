@@ -7,7 +7,8 @@ $.widget("sv.calendar_list", $.sv.widget, {
 		color: '',
 		weekday: '',
 		info: '',
-		private: 'show'
+		private: 'show',
+		daycount: 0
 	},
 
 	_update: function(response) {
@@ -32,7 +33,11 @@ $.widget("sv.calendar_list", $.sv.widget, {
 					entry.start = new Date(Date.parse('20' + entry.start));
 				else // start as timestamp
 					entry.start = new Date(entry.start*1000);
-
+					
+				//skip entry if start is not in the configured time span
+				if (self.options.daycount > 0 && entry.start.getDate() > new Date().getDate() + self.options.daycount - 1 ) 
+					return true;
+				
 				if(isNaN(entry.end)) // legacy: end in format 'y-m-d H:i:s'
 					entry.end = new Date(Date.parse('20' + entry.end));
 				else // end as timestamp
@@ -69,7 +74,7 @@ $.widget("sv.calendar_list", $.sv.widget, {
 					}
 				});
 				
-				if (entry.class.toLowerCase() == 'private' && self.options.private == 'hide'){
+				if (entry.class != undefined && entry.class.toLowerCase() == 'private' && self.options.private == 'hide'){
 					entry.title = sv_lang.calendar.private;
 				}
 				
@@ -185,8 +190,7 @@ $.widget("sv.calendar_waste", $.sv.widget, {
 			uebermorgen.setDate(uebermorgen.getDate() + 1);
 
 			var spalte = 0;
-			var muell_html = "";//<table class ='ui-btn-up-a' style='width:100%;text-align:center;overflow:hidden;'><tr>";
-			
+			node.find('div').html('');			
 			$.each(data, function(index, entry) {
 				// "pseudo clone" entry to not mute original object in widget.buffer
 				entry = Object.create(entry);
@@ -247,9 +251,9 @@ $.widget("sv.calendar_waste", $.sv.widget, {
 					);
 		
 				if (entry.icon.indexOf('.svg') == -1)
-					a.find('div').last().before( $('<img class="icon icon1" src="' + entry.icon + '" style="width: 100%; height: 120%; fill: ' + entry.color + '; stroke: ' + entry.color + '" />'));
+					a.find('div').last().before( $('<img class="icon icon1" src="' + entry.icon + '" style="width: 100%; height: 120%; fill: ' + entry.color + '; stroke: ' + entry.color + ';" />'));
 				else
-					fx.load(entry.icon,'fx-icon icon1', 'width: 100%; height: 120%; fill: ' + entry.color + '; stroke: ' + entry.color + '"', a.find('div').last(), 'before');			
+					fx.load(entry.icon,'fx-icon icon1', 'width: 100%; height: 120%; fill: ' + entry.color + '; stroke: ' + entry.color + ';', a.find('div').last(), 'before');			
 
 				node.find('div:first').append(a);
 			});

@@ -96,7 +96,7 @@
 * @param {value[]=} y-axes setup for left '0' and right '1' hand in array form (optional)
 * @param {color[?]=} y-axes color; multiples in array form (optional)
 * @param {text[?](linear,logarithmic,boolean)=linear} y-axes type, one of 'linear', 'logarithmic' or 'boolean'; multiples in array form (optional, default 'linear')
-* @param {format[?]=} either a unit of the language file, an individual format string (PHP sprintf like) or a simple string as suffix. (optional)
+* @param {format[?]=} unit(s) for the y-axis. Either a unit of the language file, an individual format string (PHP sprintf like) or a simple string as suffix. Multiples in array form. (optional)
 * @param {text[?]=} object with additional options for Highcharts, see https://api.highcharts.com/ (optional)
 * @param {text[?](normal,percent)=normal} stacking of series for each stack (array for multiple stacks in ascending order): 'normal', 'percent' (optional, default=normal). 
 * @param {text[]=} assign stacked series to different stacks: '0', '1, '2'... or ''. Sequence must be same as item sequence (optional, default='')
@@ -110,16 +110,22 @@
 {% macro period(id, item, mode, tmin, tmax, ymin, ymax, count, label, color, exposure, axis, zoom, assign, opposite, ycolor, ytype, unit, chartoptions, stacking, stacks, export, source) %}
 	{% if (not export is empty) and export > 0 %}
 		<script src="vendor/plot.highcharts/modules/exporting.js"></script>
+		<script src="vendor/plot.highcharts/modules/offline-exporting.js"></script>
 		{% if export == 2 %}
 			<script src="vendor/plot.highcharts/modules/export-data.js"></script>
 		{% endif %}
 	{% endif %}
 	{% set source = source|default('database') %}
-	{% set tmax = (tmax|lower=='0h' or tmax==0 or tmax is empty) ? 'now' : tmax %}
+	{% set tmax = (tmax|default('now')|lower=='0h' or tmax==0 or tmax is empty) ? 'now' : tmax %}
 	{% set tmin = tmin|default('1h') %}
 
 	{% set mode = (mode is iterable ? mode : [mode|default('avg')]) %}
 	{% set count = (count is iterable ? count : [count|default(100)]) %}
+	{% set unit = (unit is iterable ? unit : [unit|default('')]) %}
+	{% set units = [] %}
+	{% for uniti in unit %}
+		{% set units = units|merge([uniti|replace({',' : ';'})]) %}  /** hide comma before implode/explode to allow format strings, e.g. %01,02f% */
+	{% endfor %}
 	{% set stacking = (stacking is iterable ? stacking : [stacking|default('normal')]) %}
 	{% set stacks = (stacks is iterable ? stacks : [stacks|default('0')]) %}
 	{% set item = (item is iterable ? item : [item]) %}
@@ -158,8 +164,9 @@
 		{% if opposite is not empty %} data-opposite="{{ implode(opposite) }}" {% endif %}
 		{% if ycolor is not empty %} data-ycolor="{{ implode(ycolor) }}" {% endif %}
 		{% if stacks is not empty %} data-stacks="{{ implode(stacks) }}" {% endif %}
-		data-ytype="{{ implode(ytype) }}" data-unit="{{ implode(unit) }}" data-stacking="{{ implode(stacking) }}" 
+		data-ytype="{{ implode(ytype) }}" data-unit="{{ implode(units) }}" data-stacking="{{ implode(stacking) }}" 
 		data-chart-options="{{ chartoptions|json_encode()|escape('html_attr') }}" data-exportmenu="{{ export|default(0) }}"
+		{% if config_timesource == 'server' %} data-servertime-url="lib/clock/servertime.php" {% endif %}
 		class="plot{% if zoom == 'advanced' %} plot-highstock{% endif %}"></div>
 
 {% endmacro %}
@@ -199,9 +206,12 @@
 * @param {text=} maximum value (or type) of the item for the state of the actor (optional, default: guessed according to values)
 	Often used values are 1 for boolean items, 100 for percentages, 255 for 1-byte values.
   Additionally you may pass 'on' to use backend's 'on' function (caution: not all backend databases do support this).
+* @param {text[?]=} object with additional options for Highcharts, see https://api.highcharts.com/ (optional)
+*
+* @see plot/widget_plot.period#chart-options
 */
-{% macro rtr(id, item_actual, item_set, item_state, count, tmin, tmax, state_max) %}
-	{% set tmax = (tmax|lower=='0h' or tmax==0 or tmax is empty) ? 'now' : tmax %}
+{% macro rtr(id, item_actual, item_set, item_state, count, tmin, tmax, state_max, chartoptions) %}
+	{% set tmax = (tmax|default('now')|lower=='0h' or tmax==0 or tmax is empty) ? 'now' : tmax %}
 	{% set tmin = tmin|default('1d') %}
 	{% set count = count|default(100) %}
 	{% set items = [ implode(item_actual, ['avg', tmin, tmax, count]), implode(item_set, ['avg', tmin, tmax, count]) ] %}
@@ -212,6 +222,8 @@
 		data-item="{{ implode(items) }}"
 		data-tmin="{{ tmin }}" data-tmax="{{ tmax }}" data-state-max="{{ state_max == 'on' ? 1 : state_max }}"
 		data-label="{{ lang('plot.rtr', 'label') }}" data-axis="{{ lang('plot.rtr', 'axis') }}"
+		{% if config_timesource == 'server' %} data-servertime-url="lib/clock/servertime.php" {% endif %}
+		data-chart-options="{{ chartoptions|json_encode()|escape('html_attr') }}"
 		class="plot"></div>
 
 {% endmacro %}
@@ -240,6 +252,46 @@
 
 
 /**
+* scrolls plots in the time-range by cancelling actual series and subscribing series with changed start/end
+* @param {id=}  ID of the widget (optional)
+* @param {text}  ID of the plot to scroll (plot must have an ID in this case)
+* @param {duration}  step to scroll with each click in duration format
+* @param {type(head)=mini}  icon type / size. valid types: 'micro','mini','midi','icon' and 'head' if widget is in the headline of a box (optional, default = 'mini')
+* @param {text=} text to show between the buttons (optional, default = '')
+* 
+* @author Wolfram v. Hülsen
+*/
+{% macro timeshift (id, plot, step, type, label) %}
+{% import "@widgets/basic.html" as basic %}
+{% import "@widgets/lib.html" as lib %}
+	<span {% if not id is empty %} id="{{ uid(page, id) }}"{% endif %} data-widget="myplot.timeshift" data-bind ="{{ uid(page, plot) }}" data-step="{{ step }}"
+	{% if type == 'head' %}style="float:right; margin-right:32px;">
+		<a class="timeshift-back">{{ lib.svgimg ('', 'audio_previous.svg', 'icon0') }}</a> {{- label -}}
+		<a class="timeshift-forward">{{ lib.svgimg ('', 'audio_next.svg', 'icon0') }}</a>
+	{% else %}
+		><a class=" 
+		{%- if type == 'icon' or type == 'text' -%} /**- display as icon -*/
+			switch ui-link
+		{%- else -%} /**- display as button -*/
+			ui-btn ui-{{ type|default('mini') }} ui-corner-all ui-btn-inline
+		{% endif %}
+			 ui-nodisc-icon timeshift-back">{{ basic.icon("audio_previous") }}
+		</a>{{ label }}
+		<a class="
+		{%- if type == 'icon' or type == 'text' -%} /**- display as icon -*/
+			switch ui-link
+		{%- else -%} /**- display as button -*/
+			ui-btn ui-{{ type|default('mini') }} ui-corner-all ui-btn-inline
+		{% endif %}
+			 ui-nodisc-icon timeshift-forward">{{ basic.icon("audio_next") }}
+		</a>
+	{% endif %}
+	</span>
+{% endmacro %}
+
+
+
+/**
 * Plots a chart of x/y data
 *
 * @param {id=} unique id for this widget (optional)
@@ -262,7 +314,7 @@
 * @param {value[]=} y-axes setup for left '0' and right '1' hand in array form (optional)
 * @param {color[?]=} y-axes color; multiples in array form (optional)
 * @param {text[?](linear,logarithmic,boolean)=linear} y-axes type, one of 'linear', 'logarithmic' or 'boolean'; multiples in array form (optional, default 'linear')
-* @param {format[?]=} either a unit of the language file, an individual format string (PHP sprintf like) or a simple string as suffix. (optional)
+* @param {format[?]=} unit(s) for the y-axis. Either a unit of the language file, an individual format string (PHP sprintf like) or a simple string as suffix. Multiples in array form. (optional)
 * @param {text[?]=} object with additional options for Highcharts, see https://api.highcharts.com/ (optional)
 * @param {text[?](normal,percent)=normal} stacking of series for each stack (array for multiple stacks in ascending order): 'normal', 'percent' (optional, default=normal). 
 * @param {text[]=} assign stacked series to different stacks: '0', '1, '2'... or ''. Sequence must be same as item sequence (optional, default='')
@@ -275,10 +327,16 @@
 {% macro xyplot(id, item, xitem, yitem, xmin, xmax, ymin, ymax, label, xylabel, color, exposure, axis, zoom, assign, opposite, ycolor, ytype, unit, chartoptions, stacking, stacks, export) %}
 	{% if (not export is empty) and export > 0 %}
 		<script src="vendor/plot.highcharts/modules/exporting.js"></script>
+		<script src="vendor/plot.highcharts/modules/offline-exporting.js"></script>
 		{% if export == 2 %}
 			<script src="vendor/plot.highcharts/modules/export-data.js"></script>
 		{% endif %}
 	{% endif %}
+	{% set unit = (unit is iterable ? unit : [unit|default('')]) %}
+	{% set units = [] %}
+	{% for uniti in unit %}
+		{% set units = units|merge([uniti|replace({',' : ';'})]) %}  /** hide comma before implode/explode to allow format strings, e.g. %01,02f% */
+	{% endfor %}
 	{% set stacking = (stacking is iterable ? stacking : [stacking|default('normal')]) %}
 	{% set stacks = (stacks is iterable ? stacks : [stacks|default('0')]) %}
 
@@ -291,7 +349,7 @@
 		{% if opposite is not empty %} data-opposite="{{ implode(opposite) }}" {% endif %}
 		{% if ycolor is not empty %} data-ycolor="{{ implode(ycolor) }}" {% endif %}
 		{% if stacks is not empty %} data-stacks="{{ implode(stacks) }}" {% endif %}
-		data-ytype="{{ implode(ytype) }}" data-unit="{{ implode(unit) }}" data-stacking="{{ implode(stacking) }}" 
+		data-ytype="{{ implode(ytype) }}" data-unit="{{ implode(units) }}" data-stacking="{{ implode(stacking) }}" 
 		data-chart-options="{{ chartoptions|json_encode()|escape('html_attr') }}" data-exportmenu="{{ export|default(0) }}"
 		class="plot"></div>
 

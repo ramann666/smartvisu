@@ -22,6 +22,9 @@
 .menu-hide-phone {
 	display: inline-block;
 }
+.hide-phone {
+   display: block;
+}
 
 /* Large desktop */
 @media all and (min-width: 980px) {
@@ -45,7 +48,7 @@
   .menu-visible-phone {
 	  display: inline-block;
   }
-  .menu-hide-phone {
+  .menu-hide-phone, .hide-phone {
 	  display: none;
   }
 }
@@ -691,7 +694,7 @@ input.ui-slider-input.ui-slider-no-input[data-orientation='semicircle'] {
 }
 
 .block .image {
-  margin: 0 5px 13px 5px;
+  margin: 0 6px 13px 3px;
 }
 
 .ui-popup-container .image img,
@@ -1775,7 +1778,7 @@ div.ui-slider-switch{
   font-size: 13px;
 }
 .highcharts-grid .highcharts-grid-line {
-  stroke: rgba(255, 255, 255, .1);
+  stroke: rgba(255, 255, 255, .15);
   stroke-width: 1px;
 }
 
@@ -1865,6 +1868,7 @@ div.ui-slider-switch{
 .highcharts-pie-series .highcharts-point {
   stroke-width: 0;
 }
+[data-widget="plot.rtr"] .highcharts-empty-series, 
 .polarChart .highcharts-axis-line,
 .solidgauge .highcharts-axis-line,
 .solidgauge .highcharts-grid-line {
@@ -1985,9 +1989,14 @@ div.ui-slider-switch{
 #vumeterGradient stop[offset="0.3"] {
   stop-color: #FFF;
 }
-
 .shortdot {
   stroke-dasharray: 2, 2;
+}
+.timeshift-back .icon,
+.timeshift-forward .icon {
+	width:32px; 
+	height:auto; 
+	margin-top:0px; 
 }
 
 /**
@@ -2119,9 +2128,11 @@ svg.icon {
   margin: 1px;
 }
 
+/** do not show hand on icon
 svg.icon:hover {
   cursor: pointer;
 }
+*/
 
 svg.icon text {
   font-size: 30px;
@@ -2134,7 +2145,9 @@ svg.fx-icon, .icon {
   height: 48px;
 }
 
-.icon1 svg.icon {
+.icon1 svg.icon, .icon2 svg.icon 
+.icon3 svg.icon,.icon4 svg.icon,
+.icon5 svg.icon{
   fill: inherit;
   stroke: inherit;
   color: inherit;

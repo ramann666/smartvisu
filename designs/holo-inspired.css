@@ -799,7 +799,14 @@ button[disabled],
 .highcharts-tooltip text {
 	fill: #000;
 }
-
+.polarChart .highcharts-axis-line,
+.solidgauge .highcharts-axis-line,
+.solidgauge .highcharts-grid-line {
+  stroke: none;
+}
+.highcharts-grid .highcharts-grid-line {
+  stroke: rgba(0, 0, 0, .15);
+}
 
 .highcharts-color-0 {
 	fill: #5595c6;
@@ -866,8 +873,7 @@ button[disabled],
 }
 
 .icon1, .icon1.ui-link,
- a.ui-link:hover, a.ui-link:active,
-.switch.ui-link .icon0:hover {
+ a.ui-link:hover, a.ui-link:active {
 	stroke: #5595c6;
 	fill: #5595c6;
 	stop-color: #5595c6;
