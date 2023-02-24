@@ -187,6 +187,14 @@
 			io.checkConnected();
 		}
 	},
+	 
+	close: function () {
+		io.debug && console.log('ioFHEM: close connection');
+		io.checkConnected();
+		if (io.isConnected) {
+			io.socket.close(1000);
+		}
+	},
 	
 	monitor: function() {
 		io.debug && console.log('ioFHEM: monitor');
