@@ -449,10 +449,13 @@
 * @param {item(bool, num)=} a gad/item to activate a saved position in the actuator (bool) or send a fixed position value (num) (optional)
 * @param {type=micro} valid types: 'micro', 'mini', 'midi' (optional, default: micro)
 * @param {value=1} a value to send to item_saved in order to trigger a saved position in the actuator (bool) or send a position value (num) (optional, default=1)
+* @param {item(num,str)=} an item for the window right wing status (0/'closed', 1/'tilted', 2/'open') (optional, default = 0) 
+* @param {item(num,str)=} an item for the window left wing status (0/'closed', 1/'tilted', 2/'open') (optional, default = 0)
+* @param {color[?](icon0to5,!)=icon1} colors for the 'closed' and 'open' state, e.g. ['icon2','icon3'] or  '#f00' or ['green,'red']. Prepend a '!' to make the color constant ('!#f00'). (optional, default ['icon0','icon1'])
 *
 * @author Michael Stemmer and Wolfram v. Huelsen
 */
-{% macro smallshut(id, txt, item_move, item_stop, item_position, item_saved, type, value_saved) %}
+{% macro smallshut(id, txt, item_move, item_stop, item_position, item_saved, type, value_saved, item_window_l, item_window_r, color) %}
 	{% import "@widgets/basic.html" as basic %}
 	{% import "@widgets/icon.html" as icon %}
 	{% set uid = uid(page, id) %}
@@ -477,7 +480,11 @@
 		</span>
 		<span class="ui-shut-pic">
 			{% if item_position %}
-				{{ icon.shutter(id~'position', '', item_position) }}
+				{% if item_window_l or item_window_r %}
+					{{ basic.window(id~'position', item_position, item_window_l, item_window_r, '', '', color|default('icon1')) }}
+				{% else %}
+					{{ icon.shutter(id~'position', '', item_position) }}
+				{% endif %}
 			{% endif %}
 		</span>
 	</div>
